@@ -19,7 +19,6 @@ def print_grids(grids: List[List[str]]):
         print_grid(grid)
         print("-" * num_dashes)
 
-
 class Solver:
     solution_grids: List[List[str]] = []
     
@@ -42,7 +41,7 @@ class Solver:
                 return False
         return True
 
-    def backtrack(self, cur_grid: List[str], row_idx: int):
+    def backtrack(self, cur_grid: List[str]):
         if len(cur_grid) == NUM_ROWS and self.are_cols_valid(cur_grid):
             self.solution_grids.append(cur_grid.copy())
             return
@@ -54,13 +53,13 @@ class Solver:
             cur_grid.append(word)
             
             # TODO: remove word from dictionary
-            self.backtrack(cur_grid, row_idx + 1)
+            self.backtrack(cur_grid)
             cur_grid.pop()
     
     
     def solve(self) -> List[List[str]]:
         grid = []
-        self.backtrack(grid, 0)
+        self.backtrack(grid)
         return self.solution_grids
 
 
