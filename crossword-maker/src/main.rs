@@ -1,4 +1,5 @@
 use std::fmt;
+use trie_rs::TrieBuilder;
 
 #[derive(Clone)]
 struct Grid{
@@ -47,11 +48,13 @@ fn print_grids(grids: &Vec<Grid>) {
     }
 }
 
-fn does_prefix_exist(dictionary: &Vec<String>, prefix: &str) -> bool {
-    dictionary.iter().any(|word| word.starts_with(prefix))
+fn does_prefix_exist(dictionary: &trie_rs::Trie<u8>, prefix: &str) -> bool {
+    let prefix_bytes = prefix.as_bytes();
+    let prefixes: Vec<String> = dictionary.predictive_search(prefix_bytes).collect();
+    return !prefixes.is_empty();
 }
 
-fn are_cols_valid(dictionary: &Vec<String>, grid: &Grid) -> bool {
+fn are_cols_valid(dictionary: &trie_rs::Trie<u8>, grid: &Grid) -> bool {
     for col in 0..grid.num_cols {
         let mut col_str = String::new();
         for row in 0..grid.len() {
@@ -64,7 +67,7 @@ fn are_cols_valid(dictionary: &Vec<String>, grid: &Grid) -> bool {
     return true;
 }
 
-fn is_grid_valid(dictionary: &Vec<String>, grid: &Grid) -> bool {
+fn is_grid_valid(dictionary: &trie_rs::Trie<u8>, grid: &Grid) -> bool {
     if grid.len() != grid.num_rows {
         return false;
     }
@@ -74,13 +77,13 @@ fn is_grid_valid(dictionary: &Vec<String>, grid: &Grid) -> bool {
     return true;
 }
 
-fn backtrack(dictionary: &Vec<String>, grid: &mut Grid, solution_grids: &mut Vec<Grid>){
+fn backtrack(dictionary: &trie_rs::Trie<u8>, grid: &mut Grid, solution_grids: &mut Vec<Grid>){
     if is_grid_valid(&dictionary, &grid) {
         solution_grids.push(grid.clone());
         return;
     }
     
-    for word in dictionary {
+    for word in dictionary.predictive_search("").collect::<Vec<String>>() {
         if !are_cols_valid(dictionary, &grid) {
             continue;
         }
@@ -92,7 +95,7 @@ fn backtrack(dictionary: &Vec<String>, grid: &mut Grid, solution_grids: &mut Vec
     }
 }
 
-fn solve(dictionary: &Vec<String>, num_rows: usize, num_cols: usize) -> Vec<Grid>{
+fn solve(dictionary: &trie_rs::Trie<u8>, num_rows: usize, num_cols: usize) -> Vec<Grid>{
     // TODO: maybe just use a fixed-size array instead of Vec
     let mut initial_grid = Grid::new(num_rows, num_cols);
     let mut solution_grids: Vec<Grid> = Vec::new();
@@ -101,17 +104,17 @@ fn solve(dictionary: &Vec<String>, num_rows: usize, num_cols: usize) -> Vec<Grid
 }
 
 
-
 fn main() {
-    let dictionary = vec![
-        String::from("ABC"),
-        String::from("DEF"),
-        String::from("ZZT"),
-        String::from("GHI"),
-        String::from("BEH"),
-        String::from("CFI"),
-        String::from("ADG"),
-    ];
+    let mut builder = TrieBuilder::new();
+    builder.push("ABC");
+    builder.push("DEF");
+    builder.push("ZZT");
+    builder.push("GHI");
+    builder.push("BEH");
+    builder.push("CFI");
+    builder.push("ADG");
+    let dictionary = builder.build();
+
     let num_rows = 3;
     let solutions = solve(&dictionary, num_rows, num_rows);
     print_grids(&solutions);
