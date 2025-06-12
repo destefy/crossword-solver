@@ -1,78 +1,105 @@
-// struct Grid {
-//     grid: <Vec<String>,
-// }
+use std::fmt;
 
-// impl Grid {
-//     fn new(num_rows: usize, num_cols: usize) -> Self {
-//         let grid = vec![String::new(); num_rows];
-//         Grid { grid }
-//     }
-// }
-
-struct Solver{
-    solution_grids: Vec<Vec<String>>,
+#[derive(Clone)]
+struct Grid{
     num_rows: usize,
     num_cols: usize,
-    dictionary: Vec<String>,
+    grid: Vec<String>,
 }
 
-impl Solver {
-    fn new(num_rows: usize, num_cols: usize, dictionary: Vec<String>) -> Self {
-            Solver {
-                solution_grids: Vec::new(),
-                num_rows: num_rows,
-                num_cols: num_cols,
-                dictionary: dictionary,
-            }
-        }
-
-    fn does_prefix_exist(&self, prefix: &str) -> bool {
-        self.dictionary.iter().any(|word| word.starts_with(prefix))
-    }
-
-    fn are_cols_valid(&self, grid: &Vec<String>) -> bool {
-        for col in 0..self.num_cols {
-            let mut col_str = String::new();
-            for row in 0..self.num_rows {
-                col_str.push(grid[row].chars().nth(col).unwrap());
-            }
-            if !self.does_prefix_exist(&col_str) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    fn backtrack(&mut self, mut grid: Vec<String>) {
-        if grid.len() == self.num_rows {
-            if self.are_cols_valid(&grid) {
-                self.solution_grids.push(grid);
-            }
-            return;
-        }
-        
-        let dictionary_iter = self.dictionary.iter();
-        for word in dictionary_iter {
-            if !self.are_cols_valid(&grid) {
-                continue;
-            }
-            let mut new_grid = grid.clone();
-            new_grid.push(word.clone());
-
-            self.backtrack(new_grid);
-
-            grid.pop();
+impl Grid {
+    fn new(num_rows: usize, num_cols: usize) -> Self {
+        Grid {
+            num_rows: num_rows,
+            num_cols: num_cols,
+            grid: Vec::new(),
         }
     }
 
-    fn solve(&mut self) -> &Vec<Vec<String>>{
-        // TODO: maybe just use a fixed-size array instead of Vec
-        let initial_grid = Vec::new();
-        self.backtrack(initial_grid);
-        return &self.solution_grids;
+    fn len(&self) -> usize {
+        return self.grid.len()
     }
-
 }
+
+impl fmt::Display for Grid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for row in &self.grid {
+            write!(f, "|")?;
+            for ch in row.chars() {
+                write!(f, "{}|", ch)?;
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
+fn print_grids(grids: &Vec<Grid>) {
+    if grids.is_empty() {
+        println!("No solutions found.");
+        return;
+    }
+    let num_dashes = 2 * grids[0].num_cols + 1;
+    for grid in grids {
+        println!("{}", "-".repeat(num_dashes));
+        print!("{}", grid);
+        println!("{}", "-".repeat(num_dashes));
+    }
+}
+
+fn does_prefix_exist(dictionary: &Vec<String>, prefix: &str) -> bool {
+    dictionary.iter().any(|word| word.starts_with(prefix))
+}
+
+fn are_cols_valid(dictionary: &Vec<String>, grid: &Grid) -> bool {
+    for col in 0..grid.num_cols {
+        let mut col_str = String::new();
+        for row in 0..grid.len() {
+            col_str.push(grid.grid[row].chars().nth(col).unwrap());
+        }
+        if !does_prefix_exist(dictionary, &col_str) {
+            return false;
+        }
+    }
+    return true;
+}
+
+fn is_grid_valid(dictionary: &Vec<String>, grid: &Grid) -> bool {
+    if grid.len() != grid.num_rows {
+        return false;
+    }
+    if !are_cols_valid(dictionary, grid) {
+        return false;
+    }
+    return true;
+}
+
+fn backtrack(dictionary: &Vec<String>, grid: &mut Grid, solution_grids: &mut Vec<Grid>){
+    if is_grid_valid(&dictionary, &grid) {
+        solution_grids.push(grid.clone());
+        return;
+    }
+    
+    for word in dictionary {
+        if !are_cols_valid(dictionary, &grid) {
+            continue;
+        }
+        grid.grid.push(word.clone());
+
+        backtrack(dictionary, grid, solution_grids);
+
+        grid.grid.pop();
+    }
+}
+
+fn solve(dictionary: &Vec<String>, num_rows: usize, num_cols: usize) -> Vec<Grid>{
+    // TODO: maybe just use a fixed-size array instead of Vec
+    let mut initial_grid = Grid::new(num_rows, num_cols);
+    let mut solution_grids: Vec<Grid> = Vec::new();
+    backtrack(dictionary, &mut initial_grid, &mut solution_grids);
+    return solution_grids;
+}
+
 
 
 fn main() {
@@ -85,6 +112,7 @@ fn main() {
         String::from("CFI"),
         String::from("ADG"),
     ];
-    let mut crossword  = Solver::new(3, 3, dictionary);
-    let solutions = crossword.solve();
+    let num_rows = 3;
+    let solutions = solve(&dictionary, num_rows, num_rows);
+    print_grids(&solutions);
 }
