@@ -1,52 +1,10 @@
-use std::fmt;
-use trie_rs::TrieBuilder;
+mod grid;
+use grid::Grid;
+use grid::print_grids;
 
-#[derive(Clone)]
-struct Grid{
-    num_rows: usize,
-    num_cols: usize,
-    grid: Vec<String>,
-}
+mod dict;
+use dict::load_into_dict;
 
-impl Grid {
-    fn new(num_rows: usize, num_cols: usize) -> Self {
-        Grid {
-            num_rows: num_rows,
-            num_cols: num_cols,
-            grid: Vec::new(),
-        }
-    }
-
-    fn len(&self) -> usize {
-        return self.grid.len()
-    }
-}
-
-impl fmt::Display for Grid {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in &self.grid {
-            write!(f, "|")?;
-            for ch in row.chars() {
-                write!(f, "{}|", ch)?;
-            }
-            writeln!(f)?;
-        }
-        Ok(())
-    }
-}
-
-fn print_grids(grids: &Vec<Grid>) {
-    if grids.is_empty() {
-        println!("No solutions found.");
-        return;
-    }
-    let num_dashes = 2 * grids[0].num_cols + 1;
-    for grid in grids {
-        println!("{}", "-".repeat(num_dashes));
-        print!("{}", grid);
-        println!("{}", "-".repeat(num_dashes));
-    }
-}
 
 fn does_prefix_exist(dictionary: &trie_rs::Trie<u8>, prefix: &str) -> bool {
     let prefix_bytes = prefix.as_bytes();
@@ -105,17 +63,11 @@ fn solve(dictionary: &trie_rs::Trie<u8>, num_rows: usize, num_cols: usize) -> Ve
 
 
 fn main() {
-    let mut builder = TrieBuilder::new();
-    builder.push("ABC");
-    builder.push("DEF");
-    builder.push("ZZT");
-    builder.push("GHI");
-    builder.push("BEH");
-    builder.push("CFI");
-    builder.push("ADG");
-    let dictionary = builder.build();
+    // let mut builder = TrieBuilder::new();
+    // let dictionary = builder.build();\
+    let dictionary = load_into_dict("word_list.txt".to_string());
 
-    let num_rows = 3;
+    let num_rows = 4;
     let solutions = solve(&dictionary, num_rows, num_rows);
     print_grids(&solutions);
 }
