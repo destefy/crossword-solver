@@ -1,10 +1,13 @@
 use std::fmt;
 
 #[derive(Clone)]
+#[derive(Debug)]
 pub struct Grid{
     pub num_rows: usize,
     pub num_cols: usize,
     pub grid: Vec<String>,
+    // pub starting_row: usize,
+    // pub ending_row: usize,
 }
 
 impl Grid {
