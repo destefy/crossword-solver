@@ -3,19 +3,17 @@ use std::fmt;
 #[derive(Clone)]
 #[derive(Debug)]
 pub struct Grid{
-    pub num_rows: usize,
-    pub num_cols: usize,
     pub grid: Vec<String>,
     // pub starting_row: usize,
     // pub ending_row: usize,
 }
 
 impl Grid {
-    pub fn new(num_rows: usize, num_cols: usize) -> Self {
+    pub fn new() -> Self {
         Grid {
-            num_rows: num_rows,
-            num_cols: num_cols,
             grid: Vec::new(),
+            // starting_row: starting_row,
+            // ending_row: ending_row,
         }
     }
 
@@ -26,7 +24,7 @@ impl Grid {
 
 impl fmt::Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let num_dashes = 2 * self.num_cols + 1;
+        let num_dashes = 2 * self.grid[0].len() + 1;
         println!("{}", "-".repeat(num_dashes));
         for row in &self.grid {
             write!(f, "|")?;
@@ -40,6 +38,7 @@ impl fmt::Display for Grid {
     }
 }
 
+#[allow(dead_code)]
 pub fn print_grids(grids: &Vec<Grid>) {
     if grids.is_empty() {
         println!("No solutions found.");
