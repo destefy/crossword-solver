@@ -19,7 +19,7 @@ fn does_prefix_exist(dictionary: &Dict, prefix: &str) -> bool {
     return !prefixes.is_empty();
 }
 
-fn are_cols_valid(dictionary: &Dict, grid: &Grid) -> bool {
+fn are_cols_valid(dictionary: &Dict, grid: &Grid, check_cols_for_words: bool) -> bool {
     for col in 0..grid.num_cols {
         let mut col_str = String::new();
         for row in 0..grid.len() {
@@ -27,6 +27,14 @@ fn are_cols_valid(dictionary: &Dict, grid: &Grid) -> bool {
         }
         if !does_prefix_exist(dictionary, &col_str) {
             return false;
+        }
+
+        // Column shouldn't contain row word
+        if check_cols_for_words {
+            // TODO: maybe use a hashmap for O(1) lookup
+            if grid.grid.contains(&col_str) {
+                return false;
+            }
         }
     }
     return true;
@@ -36,7 +44,7 @@ fn is_grid_valid(dictionary: &Dict, grid: &Grid) -> bool {
     if grid.len() != grid.num_rows {
         return false;
     }
-    if !are_cols_valid(dictionary, grid) {
+    if !are_cols_valid(dictionary, grid, true) {
         return false;
     }
     return true;
@@ -60,7 +68,7 @@ fn backtrack(
     .par_iter() // Use parallel iterator
     .filter(|word| !grid.grid.contains(*word)) // Exclude used words
     .for_each(|word| {
-        if !are_cols_valid(dictionary, &grid) {
+        if !are_cols_valid(dictionary, &grid, false) {
             return;
         }
 
@@ -75,6 +83,7 @@ fn backtrack(
 }
 
 fn solve(dictionary: &Dict, num_rows: usize, num_cols: usize) -> Vec<Grid>{
+    // TODO: can I avoid repeated transpose solutions?
     // TODO: maybe just use a fixed-size array instead of Vec --> No bounds checking
     // TODO: don't store rows and cols in Grid
 
@@ -87,7 +96,6 @@ fn solve(dictionary: &Dict, num_rows: usize, num_cols: usize) -> Vec<Grid>{
         .into_inner()
         .expect("   Failed to unlock Mutex");
 }
-
 
 fn main() {
     let args: Args = parse_args();
