@@ -48,7 +48,7 @@ fn backtrack(
     solution_grids: &Arc<Mutex<Vec<Grid>>>,
 ){    
     if is_grid_valid(&dictionary, &grid) {
-        println!("Found a valid grid: {:?}", grid.grid);
+        println!("{}", grid);
         let mut vec = solution_grids.lock().unwrap();
         vec.push(grid.clone());
         return;

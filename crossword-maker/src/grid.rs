@@ -26,6 +26,8 @@ impl Grid {
 
 impl fmt::Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let num_dashes = 2 * self.num_cols + 1;
+        println!("{}", "-".repeat(num_dashes));
         for row in &self.grid {
             write!(f, "|")?;
             for ch in row.chars() {
@@ -33,6 +35,7 @@ impl fmt::Display for Grid {
             }
             writeln!(f)?;
         }
+        println!("{}", "-".repeat(num_dashes));
         Ok(())
     }
 }
@@ -42,10 +45,7 @@ pub fn print_grids(grids: &Vec<Grid>) {
         println!("No solutions found.");
         return;
     }
-    let num_dashes = 2 * grids[0].num_cols + 1;
     for grid in grids {
-        println!("{}", "-".repeat(num_dashes));
         print!("{}", grid);
-        println!("{}", "-".repeat(num_dashes));
     }
 }
