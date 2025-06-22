@@ -49,48 +49,6 @@ impl Solver {
         }
         return true;
     }
-    
-    // fn is_grid_valid(&self, grid: &Grid) -> bool {
-    //     if grid.len() != self.side_len {
-    //         return false;
-    //     }
-    //     if !self.are_cols_valid(grid, true) {
-    //         return false;
-    //     }
-    //     return true;
-    // }
-
-    // fn backtrack(
-    //     &self,
-    //     grid: &Grid,
-    //     iter: usize, 
-    //     solution_grids: &Arc<Mutex<Vec<Grid>>>,
-    // ){    
-    //     if self.is_grid_valid(&grid) {
-    //         println!("{}", grid);
-    //         let mut vec = solution_grids.lock().unwrap();
-    //         vec.push(grid.clone());
-    //         return;
-    //     }
-    
-    //     self.dictionary
-    //     .get_word_list(iter)
-    //     .par_iter() // Use parallel iterator
-    //     .filter(|word| !grid.grid.contains(*word)) // Exclude used words
-    //     .for_each(|word| {
-    //         if !self.are_cols_valid(&grid, false) {
-    //             return;
-    //         }
-    
-    //         let mut grid_clone = grid.clone();
-    //         grid_clone.grid.push(word.clone());
-    
-    //         // Recursive call
-    //         self.backtrack(&grid_clone, iter, solution_grids);
-    
-    //         grid_clone.grid.pop();
-    //     });
-    // }
 
     // TODO: give a nice explaination
     fn solve_row_chunks(
@@ -105,7 +63,7 @@ impl Solver {
         let chunk_len = top_bank[0].len();
         let num_chunks = chunk_len * 2;
         
-        // TODO: avoid repeated words
+        // TODO: avoid repeated words        
         // This is tough with the divide and conquer approach
 
         // Iterate over top bank in parallel
@@ -128,7 +86,6 @@ impl Solver {
             .for_each(|bottom_word_chunk| {
                 // Fill bottom chunk of the grid
                 let mut grid_clone = grid.clone();
-                // println!("Grid:{}", grid_clone);
 
                 grid_clone.replace_range(chunk_len..num_chunks, bottom_word_chunk);
                 if !self.are_cols_valid(&grid_clone, grid_info, false) {
@@ -138,7 +95,6 @@ impl Solver {
                 if grid_clone.len() == self.side_len{
                     println!("{}", grid_clone);
                 }
-                // valid_grids.push(grid.clone()); 
                 valid_grids.lock().unwrap().push(grid_clone.clone());
             });
         });
@@ -153,7 +109,6 @@ impl Solver {
         &self,
         grid_info: &GridInfo,
     ) -> Vec<Grid> {
-
         if grid_info.ending_row - grid_info.starting_row <= 1 {
             let word_bank = self.dictionary.get_word_list();
             let ret = self.solve_row_chunks(grid_info, word_bank, word_bank);
@@ -161,12 +116,13 @@ impl Solver {
         }
 
         // Split grid into two
+        let mid_row = (grid_info.starting_row + grid_info.ending_row) / 2;
         let top_grid = GridInfo {
             starting_row: grid_info.starting_row,
-            ending_row: grid_info.ending_row / 2,
+            ending_row: mid_row,
         };
         let bottom_grid = GridInfo {
-            starting_row: grid_info.ending_row / 2 + 1,
+            starting_row: mid_row + 1,
             ending_row: grid_info.ending_row,
         };
 
@@ -200,7 +156,6 @@ fn main() {
     );
     println!("Dictionary loaded with {} words.", solver.dictionary.get_word_list().len());
     // println!("{:?}", solver.dictionary.get_trie(0).predictive_search("").collect::<Vec<String>>());
-    // println!("{:?}", solver.dictionary.get_trie(2).predictive_search("").collect::<Vec<String>>());
 
     solver.solve();
 }
