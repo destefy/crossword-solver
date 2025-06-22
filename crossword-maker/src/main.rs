@@ -1,6 +1,6 @@
-// use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex};
 
-// use rayon::prelude::*;
+use rayon::prelude::*;
 
 mod utils;
 use utils::{Args, parse_args};
@@ -99,34 +99,54 @@ impl Solver {
         top_bank: &Vec<Grid>,
         bottom_bank: &Vec<Grid>,
     ) -> Vec<Grid> {
-        let mut grid: Grid = Grid::new();
-        let mut valid_grids: Vec<Grid> = Vec::new();
+        // TODO: maybe give each thread it's own valid_grids vector 
+        // and consilidate them at the end to avoid locks
+        let valid_grids: Arc<Mutex<Vec<Grid>>> = Arc::new(Mutex::new(Vec::new()));
         let chunk_len = top_bank[0].len();
         let num_chunks = chunk_len * 2;
+        
+        // TODO: avoid repeated words
+        // This is tough with the divide and conquer approach
 
-        // TODO: Iterate of top and bottom bank in parallel
-        for top_word_chunk in top_bank {
+        // Iterate over top bank in parallel
+        top_bank
+        .par_iter()
+        .for_each(|top_word_chunk| {
+            let mut grid: Grid = Grid::new();
             // Fill top chunk of the grid
             grid.replace_range(0..chunk_len, top_word_chunk);
-            // NOTE: This can be skipped if you do some preprocessing 
-            // to make sure every word can go in every column
+            
+            // NOTE: This can be skipped during the first execution (when top_word_chunk = word_list),
+            // if you do some preprocessing to make sure every word can go in every column
             if !self.are_cols_valid(&grid, grid_info, false) {
-                continue;
+                return;
             }
-
-            for bottom_word_chunk in bottom_bank {
+            
+            // Iterate over bottom bank in parallel
+            bottom_bank
+            .par_iter()
+            .for_each(|bottom_word_chunk| {
                 // Fill bottom chunk of the grid
-                grid.replace_range(chunk_len..num_chunks, bottom_word_chunk);
-                if !self.are_cols_valid(&grid, grid_info, false) {
-                    continue;
-                }
-                valid_grids.push(grid.clone());
-            }
-            // Remove the bottom chunk of the grid
-            grid.grid.truncate(chunk_len);
-        }
+                let mut grid_clone = grid.clone();
+                // println!("Grid:{}", grid_clone);
 
-        return valid_grids;
+                grid_clone.replace_range(chunk_len..num_chunks, bottom_word_chunk);
+                if !self.are_cols_valid(&grid_clone, grid_info, false) {
+                    return;
+                }
+                // Print complete grids
+                if grid_clone.len() == self.side_len{
+                    println!("{}", grid_clone);
+                }
+                // valid_grids.push(grid.clone()); 
+                valid_grids.lock().unwrap().push(grid_clone.clone());
+            });
+        });
+
+        return Arc::try_unwrap(valid_grids)
+        .expect("Failed to unwrap Arc")
+        .into_inner()
+        .expect("Failed to unlock Mutex");
     }
 
     fn divide_and_conquer(
@@ -137,7 +157,6 @@ impl Solver {
         if grid_info.ending_row - grid_info.starting_row <= 1 {
             let word_bank = self.dictionary.get_word_list();
             let ret = self.solve_row_chunks(grid_info, word_bank, word_bank);
-            println!("BASE AT STARTING ROW {} CASE HAS SOLUTION: {:?}", grid_info.starting_row, ret);
             return ret;
         }
 

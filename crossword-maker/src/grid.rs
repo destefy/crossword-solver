@@ -58,8 +58,8 @@ impl Index<usize> for Grid {
 
 impl fmt::Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let num_dashes = 2 * self.grid.len() + 1;
-        println!("{}", "-".repeat(num_dashes));
+        let num_dashes = 2 * self.grid[0].len() + 1;
+        println!("\n{}", "-".repeat(num_dashes));
         for row in &self.grid {
             write!(f, "|")?;
             for ch in row.chars() {
@@ -67,7 +67,7 @@ impl fmt::Display for Grid {
             }
             writeln!(f)?;
         }
-        println!("{}", "-".repeat(num_dashes));
+        print!("{}", "-".repeat(num_dashes));
         Ok(())
     }
 }
