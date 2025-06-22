@@ -18,6 +18,7 @@ impl GridInfo {
 }
 
 #[derive(Clone)]
+#[derive(Debug)]
 pub struct Grid{
     pub grid: Vec<String>
 }
@@ -33,9 +34,13 @@ impl Grid {
         self.grid.len()
     }
 
+    // Replace (or extend) the grid in range [start, end) with new_elements
     pub fn replace_range(&mut self, range: std::ops::Range<usize>, new_elements: &Grid) {
+        assert!(range.end - range.start == new_elements.len(), "Range length must match new elements length");
+        
         if self.len() < range.end {
-            self.grid.extend(new_elements.grid.clone())
+            self.grid.extend(new_elements.grid.clone());
+            return;
         }
         // Replace elements in the specified range with new_elements
         self.grid.splice(range, new_elements.clone().grid);

@@ -92,6 +92,7 @@ impl Solver {
     //     });
     // }
 
+    // TODO: give a nice explaination
     fn solve_row_chunks(
         &self,
         grid_info: &GridInfo,
@@ -99,18 +100,23 @@ impl Solver {
         bottom_bank: &Vec<Grid>,
     ) -> Vec<Grid> {
         let mut grid: Grid = Grid::new();
-        let chunk_len = top_bank[0].len();
         let mut valid_grids: Vec<Grid> = Vec::new();
+        let chunk_len = top_bank[0].len();
+        let num_chunks = chunk_len * 2;
 
+        // TODO: Iterate of top and bottom bank in parallel
         for top_word_chunk in top_bank {
             // Fill top chunk of the grid
             grid.replace_range(0..chunk_len, top_word_chunk);
+            // NOTE: This can be skipped if you do some preprocessing 
+            // to make sure every word can go in every column
             if !self.are_cols_valid(&grid, grid_info, false) {
                 continue;
             }
+
             for bottom_word_chunk in bottom_bank {
                 // Fill bottom chunk of the grid
-                grid.replace_range(0..chunk_len, bottom_word_chunk);
+                grid.replace_range(chunk_len..num_chunks, bottom_word_chunk);
                 if !self.are_cols_valid(&grid, grid_info, false) {
                     continue;
                 }
@@ -130,7 +136,9 @@ impl Solver {
 
         if grid_info.ending_row - grid_info.starting_row <= 1 {
             let word_bank = self.dictionary.get_word_list();
-            return self.solve_row_chunks(grid_info, word_bank, word_bank);
+            let ret = self.solve_row_chunks(grid_info, word_bank, word_bank);
+            println!("BASE AT STARTING ROW {} CASE HAS SOLUTION: {:?}", grid_info.starting_row, ret);
+            return ret;
         }
 
         // Split grid into two
