@@ -1,5 +1,7 @@
-use std::fmt;
 use std::ops::Index;
+
+pub use crate::dict::Dict;
+
 #[derive(Clone)]
 #[derive(Debug)]
 
@@ -20,7 +22,7 @@ impl GridInfo {
 #[derive(Clone)]
 #[derive(Debug)]
 pub struct Grid{
-    pub grid: Vec<String>
+    pub grid: Vec<usize>
 }
 
 impl Grid {
@@ -36,6 +38,7 @@ impl Grid {
 
     // Replace (or extend) the grid in range [start, end) with new_elements
     pub fn replace_range(&mut self, range: std::ops::Range<usize>, new_elements: &Grid) {
+        // TODO: maybe allow new_elements to be a String/index rather than a Grid (for the basecase calls)
         assert!(range.end - range.start == new_elements.len(), "Range length must match new elements length");
         
         if self.len() < range.end {
@@ -49,36 +52,34 @@ impl Grid {
 
 // Implement the Index trait for Grid
 impl Index<usize> for Grid {
-    type Output = String;
+    type Output = usize;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.grid[index]
     }
 }
 
-impl fmt::Display for Grid {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let num_dashes = 2 * self.grid[0].len() + 1;
-        println!("\n{}", "-".repeat(num_dashes));
-        for row in &self.grid {
-            write!(f, "|")?;
-            for ch in row.chars() {
-                write!(f, "{}|", ch)?;
-            }
-            writeln!(f)?;
+pub fn print_grid(grid: &Grid, dictionary: &Dict) {
+    let num_dashes = 2 * &dictionary.get_word_list()[0].len() + 1;
+    println!("\n{}", "-".repeat(num_dashes));
+    for row_index in &grid.grid {
+        let row_word: &String = dictionary.get_word(row_index);
+        print!("|");
+        for ch in row_word.to_string().chars() {
+            print!("{}|", ch);
         }
-        print!("{}", "-".repeat(num_dashes));
-        Ok(())
+        println!();
     }
+    print!("{}", "-".repeat(num_dashes));
 }
 
-    #[allow(dead_code)]
-pub fn print_grids(grids: &Vec<Grid>) {
+#[allow(dead_code)]
+pub fn print_grids(grids: &Vec<Grid>, dictionary: &Dict) {
     if grids.is_empty() {
         println!("No solutions found.");
         return;
     }
     for grid in grids {
-        print!("{}", grid);
+        print_grid(grid, dictionary);
     }
 }

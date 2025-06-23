@@ -7,7 +7,7 @@ use utils::{Args, parse_args};
 
 mod grid;
 #[allow(unused_imports)]
-use grid::{Grid, GridInfo, print_grids};
+use grid::{Grid, GridInfo, print_grid, print_grids};
 
 mod dict;
 use dict::Dict;
@@ -30,10 +30,10 @@ impl Solver {
     }
     
     fn are_cols_valid(&self, grid: &Grid, grid_info: &GridInfo, check_cols_for_words: bool) -> bool {
-        for col in 0..self.side_len {
+        for col_index in 0..self.side_len {
             let mut col_str = String::new();
-            for row in 0..grid.len() {
-                col_str.push(grid[row].chars().nth(col).unwrap());
+            for row_index in &grid.grid {
+                col_str.push(self.dictionary.get_word(row_index).chars().nth(col_index).unwrap());
             }
             if !self.does_prefix_exist(&col_str, grid_info.starting_row) {
                 return false;
@@ -42,7 +42,7 @@ impl Solver {
             // Column shouldn't contain row word
             if check_cols_for_words {
                 // TODO: maybe use a hashmap for O(1) lookup
-                if grid.grid.contains(&col_str) {
+                if grid.grid.contains(&col_index) {
                     return false;
                 }
             }
@@ -84,16 +84,19 @@ impl Solver {
             bottom_bank
             .par_iter()
             .for_each(|bottom_word_chunk| {
-                // Fill bottom chunk of the grid
                 let mut grid_clone = grid.clone();
-
+                
+                // Fill bottom chunk of the grid
                 grid_clone.replace_range(chunk_len..num_chunks, bottom_word_chunk);
+
+                // Exit early if grid invalid
                 if !self.are_cols_valid(&grid_clone, grid_info, false) {
                     return;
                 }
                 // Print complete grids
                 if grid_clone.len() == self.side_len{
-                    println!("{}", grid_clone);
+                    // println!("{}", grid_clone);
+                    print_grid(&grid_clone, &self.dictionary);
                 }
                 valid_grids.lock().unwrap().push(grid_clone.clone());
             });
@@ -110,8 +113,10 @@ impl Solver {
         grid_info: &GridInfo,
     ) -> Vec<Grid> {
         if grid_info.ending_row - grid_info.starting_row <= 1 {
-            let word_bank = self.dictionary.get_word_list();
-            let ret = self.solve_row_chunks(grid_info, word_bank, word_bank);
+            // Make a list of all indexes like this: [[0], [1], [2], ..., [dict.len()]]
+            let word_indexes: Vec<Grid> = (0..self.dictionary.get_word_list().len())
+            .map(|i| Grid{grid: vec![i]}).collect();
+            let ret = self.solve_row_chunks(grid_info, &word_indexes, &word_indexes);
             return ret;
         }
 

@@ -1,25 +1,18 @@
 use std::io::BufRead;
 use std::collections::HashMap;
 
-use crate::grid::{Grid};
-
 type TrieMap = HashMap<usize, trie_rs::Trie<u8>>;
 
 pub struct Dict{
+    word_list: Vec<String>,
     tries: TrieMap,
-    word_stacks: Vec<Grid>,
 }
 
 impl Dict{
     pub fn new(filepath: String, side_len: usize) -> Self {
         let word_list: Vec<String> = Self::load_into_list(filepath);
         let tries: TrieMap = Self::load_into_tries(&word_list, side_len);
-        
-        let word_stacks: Vec<Grid> = 
-            word_list.into_iter()
-            .map(|s| Grid { grid: vec![s] }) // Create a Grid for each string
-            .collect();
-        Dict {tries, word_stacks}
+        Dict {word_list, tries}
     }
 
     pub fn get_trie(&self, key: usize) -> &trie_rs::Trie<u8> {
@@ -34,8 +27,13 @@ impl Dict{
         println!("Trie for key {}: {:?}", key, trie.predictive_search("").collect::<Vec<String>>());
     }
 
-    pub fn get_word_list(&self) -> &Vec<Grid> {
-        return &self.word_stacks
+    pub fn get_word_list(&self) -> &Vec<String> {
+        return &self.word_list;
+    }
+
+    pub fn get_word(&self, index: &usize) -> &String {
+        assert!(*index < self.word_list.len(), "Index {} out of bounds for word list", index);
+        return &self.word_list[*index];
     }
 
     pub fn load_into_list(filepath: String) -> Vec<String> {
