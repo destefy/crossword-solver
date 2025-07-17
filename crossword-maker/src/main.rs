@@ -1,3 +1,4 @@
+use core::num;
 use std::sync::{Arc, Mutex};
 
 use rayon::prelude::*;
@@ -39,6 +40,7 @@ impl Solver {
                 return false;
             }
     
+            // TODO: remove this. It's always false
             // Column shouldn't contain row word
             if check_cols_for_words {
                 // TODO: maybe use a hashmap for O(1) lookup
@@ -60,47 +62,71 @@ impl Solver {
         // TODO: maybe give each thread it's own valid_grids vector 
         // and consilidate them at the end to avoid locks
         let valid_grids: Arc<Mutex<Vec<Grid>>> = Arc::new(Mutex::new(Vec::new()));
-        let chunk_len = top_bank[0].len();
-        let num_chunks = chunk_len * 2;
+        let num_chunks = grid_info.ending_row - grid_info.starting_row + 1;
+        let chunk_len = (num_chunks + 1) / 2;
         
-        // TODO: avoid repeated words        
+        // TODO: avoid repeated words
         // This is tough with the divide and conquer approach
 
-        // Iterate over top bank in parallel
-        top_bank
-        .par_iter()
-        .for_each(|top_word_chunk| {
-            let mut grid: Grid = Grid::new();
-            // Fill top chunk of the grid
-            grid.replace_range(0..chunk_len, top_word_chunk);
-            
-            // NOTE: This can be skipped during the first execution (when top_word_chunk = word_list),
-            // if you do some preprocessing to make sure every word can go in every column
-            if !self.are_cols_valid(&grid, grid_info, false) {
-                return;
-            }
-            
-            // Iterate over bottom bank in parallel
-            bottom_bank
+        // This is just for the bottom row of an odd size grid
+        // Technically it can be skipped with some preprocessing
+        if num_chunks == 1 {
+            top_bank
             .par_iter()
-            .for_each(|bottom_word_chunk| {
-                let mut grid_clone = grid.clone();
+            .for_each(|chunk| {
+                let mut grid: Grid = Grid::new();
                 
                 // Fill bottom chunk of the grid
-                grid_clone.replace_range(chunk_len..num_chunks, bottom_word_chunk);
+                grid.replace_range(0..1, chunk);
 
                 // Exit early if grid invalid
-                if !self.are_cols_valid(&grid_clone, grid_info, false) {
+                if !self.are_cols_valid(&grid, grid_info, false) {
                     return;
                 }
-                // Print complete grids
-                if grid_clone.len() == self.side_len{
-                    // println!("{}", grid_clone);
-                    print_grid(&grid_clone, &self.dictionary);
-                }
-                valid_grids.lock().unwrap().push(grid_clone.clone());
+
+                valid_grids.lock().unwrap().push(grid.clone());
             });
-        });
+        } 
+        else {
+            top_bank
+            .par_iter()
+            .for_each(|top_word_chunk| {
+                let mut grid: Grid = Grid::new();
+                // Fill top chunk of the grid
+                grid.replace_range(0..chunk_len, top_word_chunk);
+                
+                // NOTE: will a large enough dictionary, we can assume that all grid are valid at this point
+                // If it's not large enough, we won't make nay mistakes, we just won't exit early
+                
+                // Iterate over bottom bank in parallel
+                bottom_bank
+                .par_iter()
+                .for_each(|bottom_word_chunk| {
+                    let mut grid_clone = grid.clone();
+                    
+                    // Fill bottom chunk of the grid
+                    grid_clone.replace_range(chunk_len..num_chunks, bottom_word_chunk);
+    
+                    // Exit early if grid invalid
+                    if !self.are_cols_valid(&grid_clone, grid_info, false) {
+                        return;
+                    }
+                    // Print complete grids
+                    if grid_clone.len() == self.side_len{
+                        // println!("{}", grid_clone);
+                        print_grid(&grid_clone, &self.dictionary);
+                    }
+    
+                    // for debugging
+                    // print!("\n{:?}", grid_info);
+                    // print_grid(&grid_clone, &self.dictionary);
+    
+                    valid_grids.lock().unwrap().push(grid_clone.clone());
+                });
+            });
+        }
+
+        // Iterate over top bank in parallel
 
         return Arc::try_unwrap(valid_grids)
         .expect("Failed to unwrap Arc")
