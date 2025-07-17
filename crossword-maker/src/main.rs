@@ -62,12 +62,12 @@ impl Solver {
         // TODO: maybe give each thread it's own valid_grids vector 
         // and consilidate them at the end to avoid locks
         let valid_grids: Arc<Mutex<Vec<Grid>>> = Arc::new(Mutex::new(Vec::new()));
-        let num_chunks = grid_info.ending_row - grid_info.starting_row + 1;
-        let chunk_len = (num_chunks + 1) / 2;
+        let num_rows = grid_info.ending_row - grid_info.starting_row + 1;
+        let chunk_len = (num_rows + 1) / 2;
 
         // This is just for the bottom row of an odd size grid
         // Technically it can be skipped with some preprocessing
-        if num_chunks == 1 {
+        if num_rows == 1 {
             top_bank
             .par_iter()
             .for_each(|chunk| {
@@ -112,7 +112,7 @@ impl Solver {
                     let mut grid_clone = grid.clone();
                     
                     // Fill bottom chunk of the grid
-                    grid_clone.replace_range(chunk_len..num_chunks, bottom_word_chunk);
+                    grid_clone.replace_range(chunk_len..num_rows, bottom_word_chunk);
     
                     // Exit early if grid invalid
                     if !self.are_cols_valid(&grid_clone, grid_info) {
@@ -120,13 +120,8 @@ impl Solver {
                     }
                     // Print complete grids
                     if grid_clone.len() == self.side_len{
-                        // println!("{}", grid_clone);
                         print_grid(&grid_clone, &self.dictionary);
                     }
-    
-                    // for debugging
-                    // print!("\n{:?}", grid_info);
-                    // print_grid(&grid_clone, &self.dictionary);
     
                     valid_grids.lock().unwrap().push(grid_clone.clone());
                 });
