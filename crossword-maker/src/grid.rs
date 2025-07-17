@@ -22,6 +22,10 @@ impl GridInfo {
 #[derive(Clone)]
 #[derive(Debug)]
 pub struct Grid{
+    // This can probably be uint32, 
+    // Unless we have more than 2^32 words in the dictionary
+
+     // TODO: maybe just use a fixed-size array instead of Vec --> No bounds checking
     pub grid: Vec<usize>
 }
 
@@ -47,6 +51,18 @@ impl Grid {
         }
         // Replace elements in the specified range with new_elements
         self.grid.splice(range, new_elements.clone().grid);
+    }
+
+    pub fn has_overlap(&self, other: &Grid) -> bool {
+        // TODO: try using HashSet for O(n)
+
+        // Check if there is any overlap between self and other
+        for index in &self.grid {
+            if other.grid.contains(index) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 

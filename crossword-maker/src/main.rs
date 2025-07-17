@@ -1,4 +1,3 @@
-use core::num;
 use std::sync::{Arc, Mutex};
 
 use rayon::prelude::*;
@@ -30,24 +29,25 @@ impl Solver {
         return !prefixes.is_empty();
     }
     
-    fn are_cols_valid(&self, grid: &Grid, grid_info: &GridInfo, check_cols_for_words: bool) -> bool {
+    fn are_cols_valid(&self, grid: &Grid, grid_info: &GridInfo) -> bool {
         for col_index in 0..self.side_len {
             let mut col_str = String::new();
             for row_index in &grid.grid {
                 col_str.push(self.dictionary.get_word(row_index).chars().nth(col_index).unwrap());
             }
+
             if !self.does_prefix_exist(&col_str, grid_info.starting_row) {
                 return false;
             }
+
+            // TODO: don't allow words that are already used horizontally
+            // Maybe I just check at the end?
+            // Maybe I can implement the Trie on my own to be able to delete
+
+            // if grid.has_overlap(&Grid::from_vec(col_str)){
+            //     return false;
+            // }
     
-            // TODO: remove this. It's always false
-            // Column shouldn't contain row word
-            if check_cols_for_words {
-                // TODO: maybe use a hashmap for O(1) lookup
-                if grid.grid.contains(&col_index) {
-                    return false;
-                }
-            }
         }
         return true;
     }
@@ -64,9 +64,6 @@ impl Solver {
         let valid_grids: Arc<Mutex<Vec<Grid>>> = Arc::new(Mutex::new(Vec::new()));
         let num_chunks = grid_info.ending_row - grid_info.starting_row + 1;
         let chunk_len = (num_chunks + 1) / 2;
-        
-        // TODO: avoid repeated words
-        // This is tough with the divide and conquer approach
 
         // This is just for the bottom row of an odd size grid
         // Technically it can be skipped with some preprocessing
@@ -80,7 +77,7 @@ impl Solver {
                 grid.replace_range(0..1, chunk);
 
                 // Exit early if grid invalid
-                if !self.are_cols_valid(&grid, grid_info, false) {
+                if !self.are_cols_valid(&grid, grid_info) {
                     return;
                 }
 
@@ -95,20 +92,30 @@ impl Solver {
                 // Fill top chunk of the grid
                 grid.replace_range(0..chunk_len, top_word_chunk);
                 
-                // NOTE: will a large enough dictionary, we can assume that all grid are valid at this point
-                // If it's not large enough, we won't make nay mistakes, we just won't exit early
+                // NOTE: we know this top_word_chunk placement is valid
+                // If it wasn't, it would have already been filtered out.
+                // The only time this isn't true is when top_word_chunk is one row long
+                // But with a large each dictionary, it's unlikely it's not valid.
                 
                 // Iterate over bottom bank in parallel
                 bottom_bank
                 .par_iter()
                 .for_each(|bottom_word_chunk| {
+                    
+                    // We can't reuse words from top chunk
+                    // TODO: make this more efficient?
+                    // or maybe only check at the end since this doesn't prune that many branches?
+                    if grid.has_overlap(bottom_word_chunk) {
+                        return; 
+                    }
+
                     let mut grid_clone = grid.clone();
                     
                     // Fill bottom chunk of the grid
                     grid_clone.replace_range(chunk_len..num_chunks, bottom_word_chunk);
     
                     // Exit early if grid invalid
-                    if !self.are_cols_valid(&grid_clone, grid_info, false) {
+                    if !self.are_cols_valid(&grid_clone, grid_info) {
                         return;
                     }
                     // Print complete grids
@@ -125,9 +132,6 @@ impl Solver {
                 });
             });
         }
-
-        // Iterate over top bank in parallel
-
         return Arc::try_unwrap(valid_grids)
         .expect("Failed to unwrap Arc")
         .into_inner()
@@ -169,8 +173,6 @@ impl Solver {
     }
 
     fn solve(&self) -> Vec<Grid>{
-        // TODO: can I avoid repeated transpose solutions?
-        // TODO: maybe just use a fixed-size array instead of Vec --> No bounds checking
     
         let initial_grid_info = GridInfo::new(0, self.side_len - 1);
         return self.divide_and_conquer(&initial_grid_info);
@@ -179,6 +181,9 @@ impl Solver {
 
 
 fn main() {
+    // TODO: can I avoid repeated transpose solutions?
+    // TODO: add unit tests and timing benchmarks
+
     let args: Args = parse_args();
 
     let solver: Solver = Solver::new(
