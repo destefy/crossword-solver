@@ -1,8 +1,22 @@
 [package]
-name = "crossword-maker"
+name = "crossword_maker"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 rayon = "1.10.0"
 trie-rs = "0.4.2"
+
+[dev-dependencies]
+criterion = "0.6.0"
+
+[lib]
+name = "crossword_maker"
+path = "src/lib.rs"
+
+[[bench]]
+name = "bench"
+harness = false
+
+[[test]]
+name = "test"

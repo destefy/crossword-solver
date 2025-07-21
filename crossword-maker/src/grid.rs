@@ -25,7 +25,7 @@ pub struct Grid{
     // This can probably be uint32, 
     // Unless we have more than 2^32 words in the dictionary
 
-     // TODO: maybe just use a fixed-size array instead of Vec --> No bounds checking
+    // TODO: maybe just use a fixed-size array instead of Vec --> No bounds checking
     pub grid: Vec<usize>
 }
 
@@ -63,6 +63,21 @@ impl Grid {
             }
         }
         return false;
+    }
+
+    // Iterator method for Grid
+    pub fn iter(&self) -> std::slice::Iter<'_, usize> {
+        self.grid.iter()
+    }
+}
+
+// Allow for element in &grid
+impl<'a> IntoIterator for &'a Grid {
+    type Item = &'a usize;
+    type IntoIter = std::slice::Iter<'a, usize>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.grid.iter()
     }
 }
 

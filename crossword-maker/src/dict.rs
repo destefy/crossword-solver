@@ -36,6 +36,14 @@ impl Dict{
         return &self.word_list[*index];
     }
 
+    // (NOTE: an infix is a prefix but in the middle of the word)
+    pub fn does_infix_exist(&self, infix: &str, starting_index: usize) -> bool {
+        let infix_bytes = infix.as_bytes();
+        // TODO: is there a way to avoid collecting? no need to get an entire list
+        let infixes: Vec<String> = self.get_trie(starting_index).predictive_search(infix_bytes).collect();
+        return !infixes.is_empty();
+    }
+
     pub fn load_into_list(filepath: String) -> Vec<String> {
         let file = std::fs::File::open(filepath).expect("Failed to open file");
         let reader = std::io::BufReader::new(file);
